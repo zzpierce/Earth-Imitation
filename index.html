@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Earth Imitation</title>
+    <script src="scripts/jquery.min.js"></script>
+    <script src="scripts/three.js"></script>
+    <script src="scripts/controls/TrackballControls.js"></script>
+
+    <script src="scripts/dat.gui.js"></script>
+
+
+    <style>
+        body{
+            margin:0;
+        }
+        #container {
+            margin:0;
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+
+</div>
+</body>
+<script>
+    var WINDOW_H = window.innerHeight, WINDOW_W = window.innerWidth;
+    var container;
+    var scene, camera, renderer;
+    var controller;
+
+    //参数列表
+    var r = 20;     //球体半径
+    var lineLongitude = 30;     //经线数量
+    var lineLatitude = 30;      //纬线数量
+    var pts2d = [];     //构造地球的点的二维数组
+    var pts1d = [];     //构造地球的点的一维数组
+
+    init();
+    animate();
+
+    function init() {
+
+        container = document.getElementById( "container" );
+        camera = new THREE.PerspectiveCamera( 75, WINDOW_W / WINDOW_H, 1, 100000 );
+        scene = new THREE.Scene();
+        renderer = new THREE.WebGLRenderer();
+        renderer.setClearColor( 0xCCCCCC );
+        renderer.setSize( WINDOW_W, WINDOW_H );
+        container.appendChild( renderer.domElement );
+        controller = new THREE.TrackballControls( camera, container );
+        controller.rotateSpeed = 5.0;
+
+        //init earth model
+        var alpha, theta;
+        var xi, yi;
+        var xij, yij, zij;
+        var vTmp;
+
+        for( var i = 0; i < lineLatitude; i ++ ) {
+
+            alpha = i / lineLatitude * Math.PI;
+            xi = r * Math.sin( alpha );
+            yi = r * Math.cos( alpha );
+            pts2d[ i ] = [];
+
+            for( var j = 0; j < lineLongitude; j ++ ) {
+
+                theta = j / lineLongitude * 2 * Math.PI;
+                zij = xi * Math.sin( theta );
+                xij = xi * Math.cos( theta );
+                yij = yi;
+                vTmp = new THREE.Vector3( xij, yij, zij );
+                pts2d[i].push( vTmp );
+                pts1d.push( vTmp );
+            }
+
+        }
+
+        var geometry = new THREE.Geometry();
+        geometry.vertices = pts1d;
+
+        var pc = new THREE.PointCloud(
+                geometry,
+                new THREE.PointCloudMaterial( { color : 0xFF0000, size:0.3 } )
+        );
+
+        scene.add( pc );
+        camera.position.z = 40;
+
+    }
+
+    function animate() {
+
+        requestAnimationFrame( animate );
+        renderer.render( scene, camera );
+        controller.update();
+
+    }
+
+</script>
+</html>
