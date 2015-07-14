@@ -3,10 +3,11 @@
 <head lang="en">
     <meta charset="UTF-8">
     <title>Earth Imitation</title>
-    <script src="scripts/jquery.min.js"></script>
-    <script src="scripts/three.js"></script>
+    <script src="scripts/lib/jquery.min.js"></script>
+    <script src="scripts/lib/three.js"></script>
     <script src="scripts/controls/TrackballControls.js"></script>
-    <script src="scripts/dat.gui.js"></script>
+    <script src="scripts/lib/dat.gui.js"></script>
+    <script src="scripts/EarthModel.js"></script>
     <style>
         body{
             margin:0;
@@ -50,40 +51,16 @@
         controller.rotateSpeed = 5.0;
 
         //init earth model
-        var alpha, theta;
-        var xi, yi;
-        var xij, yij, zij;
-        var vTmp;
+        var earthModel = new EarthModel( r, 20 );
+        var earthMesh = earthModel.createMesh();
 
-        for( var i = 0; i < lineLatitude; i ++ ) {
+        for( var i = 0; i < earthMesh.lineMesh.length; i ++ ) {
 
-            alpha = i / lineLatitude * Math.PI;
-            xi = r * Math.sin( alpha );
-            yi = r * Math.cos( alpha );
-            pts2d[ i ] = [];
-
-            for( var j = 0; j < lineLongitude; j ++ ) {
-
-                theta = j / lineLongitude * 2 * Math.PI;
-                zij = xi * Math.sin( theta );
-                xij = xi * Math.cos( theta );
-                yij = yi;
-                vTmp = new THREE.Vector3( xij, yij, zij );
-                pts2d[i].push( vTmp );
-                pts1d.push( vTmp );
-            }
+            scene.add( earthMesh.lineMesh[ i ] );
 
         }
 
-        var geometry = new THREE.Geometry();
-        geometry.vertices = pts1d;
 
-        var pc = new THREE.PointCloud(
-                geometry,
-                new THREE.PointCloudMaterial( { color : 0xFF0000, size:0.3 } )
-        );
-
-        scene.add( pc );
         camera.position.z = 40;
 
     }
