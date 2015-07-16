@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>test dat.gui</title>
+    <script src="../scripts/lib/jquery.min.js"></script>
+    <script src="../scripts/lib/three.js"></script>
+    <script src="../scripts/controls/TrackballControls.js"></script>
+    <script src="../scripts/lib/dat.gui.js"></script>
+    <script src="../scripts/EarthModel.js"></script>
+    <style>
+        body{
+            margin:0;
+        }
+        #container {
+            margin:0;
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+</body>
+<script>
+    var WINDOW_H = window.innerHeight, WINDOW_W = window.innerWidth;
+    var container;
+    var scene, camera, renderer;
+    var controller;
+
+    var lightRed, lightGreen, lightBlue;
+    var lightRadius;
+    
+    var meshRed, meshGreen, meshBlue;
+
+    init();
+    animate();
+
+    function init() {
+
+        container = document.getElementById( "container" );
+        camera = new THREE.PerspectiveCamera( 75, WINDOW_W / WINDOW_H, 1, 100000 );
+        scene = new THREE.Scene();
+        renderer = new THREE.WebGLRenderer();
+        renderer.setClearColor( 0x000000 );
+        renderer.setSize( WINDOW_W, WINDOW_H );
+        container.appendChild( renderer.domElement );
+        controller = new THREE.TrackballControls( camera, container );
+        controller.rotateSpeed = 5.0;
+
+        lightRadius = 5;
+
+        lightRed = new THREE.PointLight( 0xFF0000, 1, 10 );
+        lightRed.position.set( lightRadius, 0, 0 );
+        lightGreen = new THREE.PointLight( 0x00FF00, 1, 10 );
+        lightGreen.position.set( 0, lightRadius, 0 );
+        lightBlue = new THREE.PointLight( 0x0000FF, 1, 10 );
+        lightBlue.position.set( 0, 0, lightRadius );
+
+        var lightA = new THREE.AmbientLight( 0x333333 );
+
+        scene.add( lightA );
+        scene.add( lightRed );
+        scene.add( lightGreen );
+        scene.add( lightBlue );
+        
+        meshRed = new THREE.Mesh(
+                new THREE.SphereGeometry( 0.15, 20, 20 ),
+                new THREE.MeshBasicMaterial( { color: 0xFF0000 } )
+        );
+        meshGreen = new THREE.Mesh(
+                new THREE.SphereGeometry( 0.15, 20, 20 ),
+                new THREE.MeshBasicMaterial( { color: 0x00FF00 } )
+        );
+        meshBlue = new THREE.Mesh(
+                new THREE.SphereGeometry( 0.15, 20, 20 ),
+                new THREE.MeshBasicMaterial( { color: 0x0000FF } )
+        );
+        meshRed.position.set( lightRadius, 0, 0 );
+        meshGreen.position.set( 0, lightRadius, 0 );
+        meshBlue.position.set( 0, 0, lightRadius );
+
+        scene.add( meshRed );
+        scene.add( meshGreen );
+        scene.add( meshBlue );
+
+        var h, w, d;
+        h = 5;
+        w = 5;
+        d = 5;
+        var geometry = new THREE.BoxGeometry( h, w, d );
+        var material = new THREE.MeshLambertMaterial( { color: 0xFFFFFF, specular: 0xFFFFFF, shininess: 50 } );
+
+        var mesh = new THREE.Mesh(
+                geometry, material
+        );
+        scene.add( mesh );
+
+        camera.position.z = 10;
+        camera.position.x = 10;
+        camera.position.y = 7;
+
+        initGUIPanel();
+    }
+
+    function initGUIPanel() {
+
+        var PanelText = function() {
+
+            this.redLight = 0;
+            this.greenLight = 0;
+            this.blueLight = 0;
+
+        };
+
+        var panel = new PanelText();
+        var controlGUI = new dat.GUI();
+
+        var folder = controlGUI.addFolder( "Folder" );
+        var red = folder.add( panel, 'redLight', 0, 360).listen();
+        var green = folder.add( panel, 'greenLight', 0, 360).listen();
+        var blue = folder.add( panel, 'blueLight', 0, 360).listen();
+
+        red.onChange(function(value){
+            var v = value * Math.PI / 180;
+            var x = lightRadius * Math.cos( v );
+            var z = lightRadius * Math.sin( v );
+
+            meshRed.position.set( x, 0, z);
+            lightRed.position.set( x, 0, z );
+        });
+        green.onChange(function(value){
+            var v = value * Math.PI / 180;
+            var x = lightRadius * Math.sin( v );
+            var y = lightRadius * Math.cos( v );
+
+            meshGreen.position.set( x, y, 0 );
+            lightGreen.position.set( x, y, 0 );
+        });
+        blue.onChange(function(value){
+            var v = value * Math.PI / 180;
+            var z = lightRadius * Math.cos( v );
+            var y = lightRadius * Math.sin( v );
+
+            meshBlue.position.set( 0, y, z);
+            lightBlue.position.set( 0, y, z );
+        });
+    }
+
+    function animate() {
+
+        requestAnimationFrame( animate );
+        renderer.render( scene, camera );
+        controller.update();
+
+    }
+</script>
+</html>
