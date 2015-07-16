@@ -13,6 +13,8 @@ EarthModel = function( r, l ) {
     this.lineLongitude = ( l !== undefined ) ? l : 20;
     this.pts = [];
 
+    this.earthMesh = {};
+
 };
 
 EarthModel.prototype = {
@@ -20,8 +22,6 @@ EarthModel.prototype = {
     constructor: EarthModel,
 
     createMesh : function() {
-
-        var earthMesh = {};     //Object contains all meshes of earth model
 
         var vNow;
         var alpha, theta;
@@ -51,10 +51,8 @@ EarthModel.prototype = {
 
         var geometry;
         //line mesh
-        earthMesh.lineMesh = this.createLineMesh();
-        earthMesh.faceMesh = this.createFaceMesh();
-
-        return earthMesh;
+        this.createLineMesh();
+        //this.createFaceMesh();
 
     },
 
@@ -85,21 +83,37 @@ EarthModel.prototype = {
             geometry.vertices = vertices[ i ];
             lineMesh.push( new THREE.Line(
                 geometry,
-                new THREE.LineBasicMaterial( { color : 0xFF0000, size:0.3 } )
+                new THREE.LineBasicMaterial( { color : 0x66CCFF, size:0.3 } )
             ) );
             geometry = new THREE.Geometry();
             geometry.vertices = vertices2[ i ];
             lineMesh.push( new THREE.Line(
                 geometry,
-                new THREE.LineBasicMaterial( { color : 0xFF0000, size:0.3 } )
+                new THREE.LineBasicMaterial( { color : 0x66CCFF, size:0.3 } )
             ) );
         }
 
-        return lineMesh;
+        this.earthMesh.lineMesh = lineMesh;
 
     },
 
-    createFaceMesh : function() {
+    createFaceMesh : function( map, callback ) {
+
+        var _this = this;
+        var loader = new THREE.TextureLoader();
+
+        loader.load( map, function ( texture ) {
+
+            var geometry = new THREE.SphereGeometry( _this.r - 0.01, _this.lineLatitude, _this.lineLongitude );
+
+            var material = new THREE.MeshLambertMaterial( { map: texture, overdraw: 0.5 } );
+
+            _this.earthMesh.faceMesh = new THREE.Mesh( geometry, material );
+
+            callback.call();
+
+        } );
+
 
     }
 };

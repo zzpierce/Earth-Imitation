@@ -2,25 +2,20 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title>Earth Imitation</title>
+    <title></title>
     <script src="scripts/lib/jquery.min.js"></script>
-    <script src="scripts/lib/three.js"></script>
+    <script src="scripts/lib/three.min.js"></script>
     <script src="scripts/controls/TrackballControls.js"></script>
-    <script src="scripts/lib/dat.gui.js"></script>
     <script src="scripts/EarthModel.js"></script>
-    <style>
-        body{
-            margin:0;
-        }
-        #container {
-            margin:0;
-        }
-    </style>
+    <script>
+        var AmCharts = {};
+        AmCharts.maps = {};
+    </script>
+    <script src="data/testmap/worldWithAntarcticaHigh.js"></script>
 </head>
 <body>
-<div id="container">
+<div id="container"></div>
 
-</div>
 </body>
 <script>
     var WINDOW_H = window.innerHeight, WINDOW_W = window.innerWidth;
@@ -29,40 +24,209 @@
     var controller;
 
     //参数列表
-    var r = 20;     //球体半径
     var lineLongitude = 30;     //经线数量
-    var lineLatitude = 30;      //纬线数量
+    var lineLatitude = 4;      //纬线数量
     var pts2d = [];     //构造地球的点的二维数组
     var pts1d = [];     //构造地球的点的一维数组
 
+    var world = AmCharts.maps.worldWithAntarcticaHigh;
+    var _path = world.svg.g.path;
+    var mapRegion = world.svg.defs["amcharts:ammap"];
+
+    var path = [];
+    //顶点的三维数组
+    var vertices = [];
+    var xMax = 1008.27;
+    var yMax = 1224;
+    var toAngle = Math.PI / 180;
+    var r = xMax * 180 / ( Math.PI * ( mapRegion.rightLongitude - mapRegion.leftLongitude ) );     //球体半径
+
+    var north = r * Math.tan( 83.68 * toAngle  );
+    var south = r * Math.tan( 55.55 * toAngle );
+    var total = north + south;
+
+    translate();
     init();
     animate();
 
     function init() {
 
-        container = document.getElementById( "container" );
-        camera = new THREE.PerspectiveCamera( 75, WINDOW_W / WINDOW_H, 1, 100000 );
+        container = document.getElementById("container");
+        camera = new THREE.PerspectiveCamera(75, WINDOW_W / WINDOW_H, 1, 100000);
         scene = new THREE.Scene();
         renderer = new THREE.WebGLRenderer();
-        renderer.setClearColor( 0xCCCCCC );
-        renderer.setSize( WINDOW_W, WINDOW_H );
-        container.appendChild( renderer.domElement );
-        controller = new THREE.TrackballControls( camera, container );
+        renderer.setClearColor(0x000000);
+        renderer.setSize(WINDOW_W, WINDOW_H);
+        container.appendChild(renderer.domElement);
+        controller = new THREE.TrackballControls(camera, container);
         controller.rotateSpeed = 5.0;
 
-        //init earth model
-        var earthModel = new EarthModel( r, 20 );
-        var earthMesh = earthModel.createMesh();
+        draw();
 
-        for( var i = 0; i < earthMesh.lineMesh.length; i ++ ) {
+        camera.position.z = 200;
+        camera.position.x = 300;
+        camera.position.y = 0;
 
-            scene.add( earthMesh.lineMesh[ i ] );
+        //init earth bone model
+        var alpha, theta;
+        var xi, yi;
+        var xij, yij, zij;
+        var vTmp;
+        var pts2d = [];
+
+        for( var i = 0; i < lineLatitude; i ++ ) {
+
+            alpha = i / lineLatitude * Math.PI;
+            xi = r * Math.sin( alpha );
+            yi = r * Math.cos( alpha );
+            pts2d[ i ] = [];
+
+            for( var j = 0; j < lineLongitude; j ++ ) {
+
+                theta = j / lineLongitude * 2 * Math.PI;
+                zij = xi * Math.sin( theta );
+                xij = xi * Math.cos( theta );
+                yij = yi;
+                vTmp = new THREE.Vector3( xij, yij, zij );
+                pts2d[i].push( vTmp );
+                pts1d.push( vTmp );
+            }
 
         }
 
+        var lightD = new THREE.DirectionalLight( 0xFFFFFF, 0.7 );
+        lightD.position.set( 100, 100, 0 );
+        scene.add( lightD );
 
-        camera.position.z = 40;
+        var lightA = new THREE.AmbientLight( 0x666666 );
+        scene.add( lightA );
 
+        //init earth model
+        var earthModel = new EarthModel( r, 36 );
+        earthModel.createMesh();
+        var earthMesh = earthModel.earthMesh;
+
+        for( var i = 0; i < earthMesh.lineMesh.length; i ++ ) {
+
+            //scene.add( earthMesh.lineMesh[ i ] );
+
+        }
+
+        earthModel.createFaceMesh( "data/textures/earth_atmos_4096.jpg", function(){
+            console.log( earthMesh.faceMesh );
+            console.log( earthModel.earthMesh.faceMesh );
+            scene.add( earthMesh.faceMesh );
+        });
+    }
+
+    //将SVG格式的坐标转为数组格式
+    function translate() {
+        var pathLen = _path.length;
+        for( var i = 0; i < pathLen; i ++ ) {
+            var d = _path[ i ].d;
+            var _d = d.split(/([^\d\.-]+)/);
+            path.push( _d );
+
+//            for( var j=0;j<_d.length;j++){
+//                if(_d[j] == "zm" || _d[j] == "zM" || _d[j] == 'm' )console.log(_d[j]);
+//            }
+        }
+
+        //console.log(path);
+        var nowX, nowY;
+        for( i = 0; i < path.length; i ++ ) {
+            vertices[ i ] = [];
+            var k = -1;
+            for( var j = 0; j < path[ i ].length; j++ ) {
+                switch( path[ i ][ j ] ){
+                    case 'M':
+                    case 'zM':
+                        k ++;
+                        vertices[i][k] = [];
+                        nowX = parseFloat( path[i][j+1] );
+                        nowY = parseFloat( path[i][j+3] );
+                        vertices[ i][k].push( new THREE.Vector3( nowX, nowY, 0) );
+                        j += 3;
+                        break;
+                    case 'L':
+                        nowX = parseFloat( path[i][j+1] );
+                        nowY = parseFloat( path[i][j+3] );
+                        vertices[ i][k].push( new THREE.Vector3( nowX, nowY, 0) );
+                        j += 3;
+                        break;
+                    case 'H':
+                        nowX = parseFloat( path[i][j+1] );
+                        vertices[i][k].push( new THREE.Vector3( nowX, nowY, 0));
+                        j += 1;
+                        break;
+                    case 'V':
+                        nowY = parseFloat( path[i][j+1] );
+                        vertices[i][k].push( new THREE.Vector3( nowX, nowY, 0));
+                        j += 1;
+                        break;
+                    case 'l':
+                        nowX = parseFloat( nowX ) + parseFloat( path[i][j+1] );
+                        nowY = parseFloat( nowY ) + parseFloat( path[i][j+3] );
+                        vertices[ i][k].push( new THREE.Vector3( nowX, nowY, 0) );
+                        j += 3;
+                        break;
+                    case 'h':
+                        nowX = parseFloat( nowX ) + parseFloat( path[i][j+1] );
+                        vertices[ i][k].push( new THREE.Vector3( nowX, nowY, 0) );
+                        j += 1;
+                        break;
+                    case 'v':
+                        nowY = parseFloat( nowY ) + parseFloat( path[i][j+1] );
+                        vertices[i][k].push( new THREE.Vector3( nowX, nowY, 0));
+                        j += 1;
+                        break;
+                    default: break;
+                }
+                if( nowX > xMax ) xMax = nowX;
+                if( nowY > yMax ) yMax = nowY;
+            }
+
+        }
+        console.log( xMax + " " + yMax );
+        //console.log(vertices);
+        for( i = 0; i < vertices.length; i ++ ) {
+            for( j = 0; j < vertices[i].length; j ++ ) {
+                for( k = 0; k < vertices[i][j].length; k ++ ) {
+                    vertices[i][j][k] = mapping( vertices[i][j][k] );
+                }
+            }
+        }
+    }
+
+    //将二维坐标转为球形地图的坐标
+    function mapping( v3 ) {
+
+        var xe = v3.x * ( mapRegion.rightLongitude - mapRegion.leftLongitude ) / xMax + 190.5;
+        //var ye = v3.y * ( mapRegion.topLatitude - mapRegion.bottomLatitude ) / yMax + 90 - mapRegion.topLatitude;
+
+        var yt = ( 462.5 - v3.y ) / 500 * 180;
+
+        var alpha = - 2 * Math.atan( Math.exp( yt * Math.PI / 180 ) );
+        var theta = xe * toAngle;
+
+        var xTmp = r * Math.sin( alpha );
+        var y = - r * Math.cos( alpha );
+        var x = - xTmp * Math.cos( theta );
+        var z = xTmp * Math.sin( theta );
+
+        return new THREE.Vector3( x, y, z );
+    }
+
+    function draw() {
+        var geometry;
+        var material = new THREE.LineBasicMaterial( { color: 0x66ccff } );
+        for( var i = 0; i < vertices.length; i ++ ) {
+            for( var j = 0; j < vertices[ i].length; j ++ ) {
+                geometry = new THREE.Geometry();
+                geometry.vertices = vertices[i][j];
+                scene.add( new THREE.Line( geometry, material ) );
+            }
+        }
     }
 
     function animate() {
@@ -72,6 +236,6 @@
         controller.update();
 
     }
-
 </script>
 </html>
+
