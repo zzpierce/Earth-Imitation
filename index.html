@@ -59,14 +59,14 @@
     //earth model
     var earthModel = new EarthModel( r, 36 );
 
+    //飘来飘去的特效
+    var messageMesh = [];
 
     init();
     animate();
 
     function init() {
 
-        svgMap.translate( _path );
-        initGUIPanel();
 
         container = document.getElementById("container");
         camera = new THREE.PerspectiveCamera(75, WINDOW_W / WINDOW_H, 1, 100000);
@@ -78,11 +78,41 @@
         controller = new THREE.TrackballControls(camera, container);
         controller.rotateSpeed = 5.0;
 
-        draw();
+        svgMap.translate( _path );
+        initGUIPanel();
+        drawPath();
+        drawEarth();
+        drawStar();
+        //drawMessage();
 
         camera.position.z = 200;
         camera.position.x = 300;
         camera.position.y = 0;
+
+    }
+
+    //轮廓线
+    function drawPath() {
+
+        var geometry;
+        var material = new THREE.LineBasicMaterial( { color: 0xbbbbbb } );
+
+        for( var i = 0; i < svgMap.vertices.length; i ++ ) {
+            for( var j = 0; j < svgMap.vertices[ i].length; j ++ ) {
+
+                geometry = new THREE.Geometry();
+                geometry.vertices = svgMap.vertices[i][j];
+                var mesh = new THREE.Line( geometry, material );
+                svgMesh.push( mesh );
+
+                scene.add( mesh );
+
+            }
+        }
+
+    }
+
+    function drawEarth() {
 
         //init latitude and longitude
         var alpha, theta;
@@ -138,35 +168,42 @@
 
     }
 
-    function draw() {
+    //星空背景
+    function drawStar() {
 
-        var geometry;
-        var material = new THREE.LineBasicMaterial( { color: 0xbbbbbb } );
+        //star background
+        var geometry = new THREE.Geometry();
 
-        for( var i = 0; i < svgMap.vertices.length; i ++ ) {
-            for( var j = 0; j < svgMap.vertices[ i].length; j ++ ) {
+        for ( var i = 0; i < 10000; i ++ ) {
 
-                geometry = new THREE.Geometry();
-                geometry.vertices = svgMap.vertices[i][j];
-                var mesh = new THREE.Line( geometry, material );
-                svgMesh.push( mesh );
+            var vertex = new THREE.Vector3();
+            var r = 2000 + Math.random() * 1000;
+            var alpha = Math.random() * 2 * Math.PI;
+            var theta = Math.random() * 2 * Math.PI;
 
-                scene.add( mesh );
+            vertex.x = r * Math.sin( alpha ) * Math.cos( theta );
+            vertex.y = r * Math.cos( alpha );
+            vertex.z = r * Math.sin( alpha ) * Math.sin( theta );
 
-            }
+            geometry.vertices.push( vertex );
+
         }
+
+        var particles = new THREE.PointCloud( geometry, new THREE.PointCloudMaterial( { color: 0x888888 } ) );
+        scene.add( particles );
 
     }
 
+    //控制面板
     function initGUIPanel() {
 
         var PanelText = function() {
 
             this.map1 = function() {
 
-                scene.remove( earthModel.earthMesh.faceMesh );
                 earthModel.createFaceMesh( "data/textures/earth_lights_2048.png", function(){
 
+                    scene.remove( earthModel.earthMesh.faceMesh );
                     scene.add( earthModel.earthMesh.faceMesh );
 
                 });
@@ -175,9 +212,9 @@
 
             this.map2 = function() {
 
-                scene.remove( earthModel.earthMesh.faceMesh );
                 earthModel.createFaceMesh( "data/textures/earth_atmos_4096.jpg", function(){
 
+                    scene.remove( earthModel.earthMesh.faceMesh );
                     scene.add( earthModel.earthMesh.faceMesh );
 
                 });
@@ -186,15 +223,19 @@
 
             this.map3 = function() {
 
-                scene.remove( earthModel.earthMesh.faceMesh );
                 earthModel.createFaceMesh( "data/textures/earth_specular_2048.jpg", function(){
 
+                    scene.remove( earthModel.earthMesh.faceMesh );
                     scene.add( earthModel.earthMesh.faceMesh );
 
                 });
 
             };
 
+            this.noMap = function() {
+
+                scene.remove( earthModel.earthMesh.faceMesh );
+            };
 
             this.bone = function() {
 
@@ -210,7 +251,9 @@
         mapFolder.add( panel, 'map1' );
         mapFolder.add( panel, 'map2' );
         mapFolder.add( panel, 'map3' );
-        
+        mapFolder.add( panel, 'noMap' );
+        mapFolder.open();
+
         var colorControl = controlGUI.addColor( panel, 'lineColor').listen();
         colorControl.onChange( function( value ) {
 
@@ -223,6 +266,46 @@
         } );
 
     }
+
+    //加特技
+    function drawMessage() {
+
+        //首先初始化mesh
+        messageMesh.push(
+
+                new THREE.Mesh(
+                        new THREE.BoxGeometry( 1, 1, 1 ),
+                        new THREE.MeshBasicMaterial( { color : 0x00FF00 } )
+                )
+
+        );
+
+        //给一个起始位置和目的位置
+        var vFrom = getSpherePoint( r + 1 );
+        var vTo = getSpherePoint( r );
+
+        messageMesh[0].position.set( vFrom.x, vFrom.y, vFrom.z );
+        scene.add( messageMesh[0] );
+    }
+
+    function moveMessage() {
+
+    }
+
+    function getSpherePoint( r ) {
+
+        var alpha = Math.random() * 2 * Math.PI;
+        var theta = Math.random() * 2 * Math.PI;
+
+        var v = new THREE.Vector3();
+        v.x = r * Math.sin( alpha ) * Math.cos( theta );
+        v.y = r * Math.cos( alpha );
+        v.z = r * Math.sin( alpha ) * Math.sin( theta );
+
+        return v;
+
+    }
+
     function animate() {
 
         requestAnimationFrame( animate );
