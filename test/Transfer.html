@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <title>Earth Imitation</title>
     <script src="../scripts/lib/jquery.min.js"></script>
-    <script src="../scripts/lib/three.js"></script>
+    <script src="../scripts/lib/three.min.js"></script>
     <script src="../scripts/controls/TrackballControls.js"></script>
     <script src="../scripts/lib/dat.gui.js"></script>
     <script src="../scripts/EarthModel.js"></script>
+    <script src="../scripts/MessageModel.js"></script>
     <style>
         body{
             margin:0;
@@ -35,8 +36,12 @@
     var pts2d = [];     //构造地球的点的二维数组
     var pts1d = [];     //构造地球的点的一维数组
 
-    init();
-    animate();
+    var messageModel = [];
+
+    $(document).ready(function(){
+        init();
+        animate();
+    });
 
     function init() {
 
@@ -48,7 +53,7 @@
         renderer.setSize( WINDOW_W, WINDOW_H );
         container.appendChild( renderer.domElement );
         controller = new THREE.TrackballControls( camera, container );
-        controller.rotateSpeed = 5.0;
+        controller.rotateSpeed = 3.0;
 
         var lightD = new THREE.DirectionalLight( 0xFFFFFF, 0.7 );
         lightD.position.set( 100, 100, 0 );
@@ -68,24 +73,73 @@
 
         }
 
-        earthModel.createFaceMesh( "../data/textures/earth_atmos_4096.jpg", function(){
-            console.log( earthMesh.faceMesh );
-            console.log( earthModel.earthMesh.faceMesh );
-            scene.add( earthMesh.faceMesh );
-        });
-
-        //var lightA = new THREE.AmbientLight( 0xFFFFFF );
-        //scene.add(lightA);
+//        earthModel.createFaceMesh( "../data/textures/earth_atmos_4096.jpg", function(){
+//
+//            scene.add( earthMesh.faceMesh );
+//
+//        });
 
 
         camera.position.z = 40;
 
+
+    }
+
+    function messageUpdate() {
+
+        //generate new messages
+        var chance = 0.01;
+        if( Math.random() < chance ) {
+
+            var mm = new MessageModel( r );
+            mm.init();
+            messageModel.push( mm );
+            scene.add( messageModel[ messageModel.length - 1].curveMesh );
+
+            for( var  i = 0; i < messageModel[ messageModel.length - 1].pieceMesh.length; i ++ ) {
+
+                scene.add( messageModel[ messageModel.length - 1].pieceMesh[ i ] );
+
+            }
+
+        }
+
+
+        //update current messages
+        for( i = 0; i < messageModel.length; i ++ ) {
+
+            if( messageModel[ i ].status == 2 ) {
+
+                scene.remove( messageModel[ i ].curveMesh );
+                for ( var j = 0; j < messageModel[ i ].pieceMesh.length; j ++ ) {
+
+                    scene.remove( messageModel[ i ].pieceMesh[ j ] );
+
+                }
+                messageModel[ i ].status =  3;
+
+            }
+            else{
+
+                messageModel[ i ].update();
+
+            }
+
+        }
+
+        if( messageModel.length > 0 && messageModel[ 0 ].status == 3 ) {
+
+            messageModel.unshift();
+
+        }
     }
 
     function animate() {
 
         requestAnimationFrame( animate );
         renderer.render( scene, camera );
+        messageUpdate();
+
         controller.update();
 
     }

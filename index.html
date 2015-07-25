@@ -9,6 +9,7 @@
     <script src="scripts/lib/dat.gui.js"></script>
     <script src="scripts/EarthModel.js"></script>
     <script src="scripts/SVGTranslator.js"></script>
+    <script src="scripts/MessageModel.js"></script>
 
     <script>
         var AmCharts = {};
@@ -60,7 +61,7 @@
     var earthModel = new EarthModel( r, 36 );
 
     //飘来飘去的特效
-    var messageMesh = [];
+    var messageModel = [];
 
     init();
     animate();
@@ -76,7 +77,7 @@
         renderer.setSize(WINDOW_W, WINDOW_H);
         container.appendChild(renderer.domElement);
         controller = new THREE.TrackballControls(camera, container);
-        controller.rotateSpeed = 5.0;
+        controller.rotateSpeed = 2.0;
 
         svgMap.translate( _path );
         initGUIPanel();
@@ -268,29 +269,55 @@
     }
 
     //加特技
-    function drawMessage() {
+    function messageUpdate() {
 
-        //首先初始化mesh
-        messageMesh.push(
+        //generate new messages
+        var chance = 0.1;
+        if( Math.random() < chance ) {
 
-                new THREE.Mesh(
-                        new THREE.BoxGeometry( 1, 1, 1 ),
-                        new THREE.MeshBasicMaterial( { color : 0x00FF00 } )
-                )
+            var mm = new MessageModel( r );
+            mm.init();
+            messageModel.push( mm );
+            scene.add( messageModel[ messageModel.length - 1].curveMesh );
 
-        );
+            for( var  i = 0; i < messageModel[ messageModel.length - 1].pieceMesh.length; i ++ ) {
 
-        //给一个起始位置和目的位置
-        var vFrom = getSpherePoint( r + 1 );
-        var vTo = getSpherePoint( r );
+                scene.add( messageModel[ messageModel.length - 1].pieceMesh[ i ] );
 
-        messageMesh[0].position.set( vFrom.x, vFrom.y, vFrom.z );
-        scene.add( messageMesh[0] );
+            }
+
+        }
+
+
+        //update current messages
+        for( i = 0; i < messageModel.length; i ++ ) {
+
+            if( messageModel[ i ].status == 2 ) {
+
+                scene.remove( messageModel[ i ].curveMesh );
+                for ( var j = 0; j < messageModel[ i ].pieceMesh.length; j ++ ) {
+
+                    scene.remove( messageModel[ i ].pieceMesh[ j ] );
+
+                }
+                messageModel[ i ].status =  3;
+
+            }
+            else{
+
+                messageModel[ i ].update();
+
+            }
+
+        }
+
+        if( messageModel.length > 0 && messageModel[ 0 ].status == 3 ) {
+
+            messageModel.unshift();
+
+        }
     }
 
-    function moveMessage() {
-
-    }
 
     function getSpherePoint( r ) {
 
@@ -310,6 +337,8 @@
 
         requestAnimationFrame( animate );
         renderer.render( scene, camera );
+        messageUpdate();
+
         controller.update();
 
     }
