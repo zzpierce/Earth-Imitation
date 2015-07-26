@@ -86,6 +86,8 @@
         drawStar();
         //drawMessage();
 
+        window.addEventListener( 'resize', onWindowResize, false );
+
         camera.position.z = 200;
         camera.position.x = 300;
         camera.position.y = 0;
@@ -276,7 +278,7 @@
         if( Math.random() < chance ) {
 
             messageModel.push( new MessageModel( r).init() );
-            scene.add( messageModel[ messageModel.length - 1].curveMesh );
+            //scene.add( messageModel[ messageModel.length - 1].curveMesh );
 
             for( var  i = 0; i < messageModel[ messageModel.length - 1].pieceMesh.length; i ++ ) {
 
@@ -292,7 +294,7 @@
 
             if( messageModel[ i ].status == 2 ) {
 
-                scene.remove( messageModel[ i ].curveMesh );
+                //scene.remove( messageModel[ i ].curveMesh );
                 for ( var j = 0; j < messageModel[ i ].pieceMesh.length; j ++ ) {
 
                     scene.remove( messageModel[ i ].pieceMesh[ j ] );
@@ -315,7 +317,6 @@
 
         }
 
-        console.log( messageModel.length );
     }
 
 
@@ -330,6 +331,18 @@
         v.z = r * Math.sin( alpha ) * Math.sin( theta );
 
         return v;
+
+    }
+
+    function onWindowResize() {
+
+        windowHalfX = window.innerWidth / 2;
+        windowHalfY = window.innerHeight / 2;
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
 
     }
 

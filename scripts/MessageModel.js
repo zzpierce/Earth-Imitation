@@ -100,7 +100,7 @@ MessageModel.prototype = {
         var pts = this.pts.slice( 0 );
 
         var colorList = [
-            0xCCCC33, 0x33FF00, 0xCCCCCC
+            0xCCCC33, 0x33FF00, 0xCCCCCC, 0xCC0033
         ];
 
         var index = Math.floor( Math.random() * colorList.length );
