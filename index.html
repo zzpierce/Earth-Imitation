@@ -275,9 +275,7 @@
         var chance = 0.1;
         if( Math.random() < chance ) {
 
-            var mm = new MessageModel( r );
-            mm.init();
-            messageModel.push( mm );
+            messageModel.push( new MessageModel( r).init() );
             scene.add( messageModel[ messageModel.length - 1].curveMesh );
 
             for( var  i = 0; i < messageModel[ messageModel.length - 1].pieceMesh.length; i ++ ) {
@@ -313,9 +311,11 @@
 
         if( messageModel.length > 0 && messageModel[ 0 ].status == 3 ) {
 
-            messageModel.unshift();
+            messageModel.shift();
 
         }
+
+        console.log( messageModel.length );
     }
 
 

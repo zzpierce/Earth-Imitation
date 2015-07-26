@@ -47,6 +47,8 @@ MessageModel.prototype = {
         this.initPiece();
 
         this.time = 0;
+
+        return this;
     },
 
     initCurve: function() {
